@@ -64,7 +64,7 @@ def register_function(app, collection):
                 return create_error_response(
                     400,
                     "Invalid 'gem5-version' parameter: must have at least "
-                    "major.minor format (e.g., '23.0')",
+                    "major version format (e.g., '23.0', '25.1')",
                 )
 
             # Query for resources where any gem5_version matches one of

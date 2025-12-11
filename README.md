@@ -209,7 +209,7 @@ GET /api/resources/list-all-resources?gem5-version=25.0.0.1
 **Notes**:
 
 - Uses prefix matching: a parameter like `25.0.0.1` matches resources with `25.0`, `25.0.0`, or `25.0.0.1` in their `gem5_versions` field
-- Version parameter must have at least `major.minor` format (e.g., `23.0`, not just `23`)
+- Version parameter must have at least `major` version (e.g., `23.0`), gem5 major versions follow the format `release-year.release_num` (eg, "25.1" would be the second release of year 2025).
 - Returns all versions of resources that match
 - Returns an empty list if no resources match the specified gem5 version
 
