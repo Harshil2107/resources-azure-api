@@ -680,6 +680,105 @@ class TestResourcesAPIIntegration(unittest.TestCase):
         long_ids = {(r["id"], r["resource_version"]) for r in data_long}
         self.assertTrue(short_ids.issubset(long_ids))
 
+    def test_list_all_resources_latest_version_only(self):
+        """Test that latest-version=true returns only one version per
+        resource."""
+        response = requests.get(
+            f"{self.base_url}/resources/list-all-resources",
+            params={"gem5-version": "23.0", "latest-version": "true"},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIsInstance(data, list)
+
+        # Check no duplicate IDs (each resource appears only once)
+        ids = [r["id"] for r in data]
+        self.assertEqual(len(ids), len(set(ids)))
+
+    def test_list_all_resources_latest_version_false(self):
+        """Test that latest-version=false returns all versions (default
+        behavior)."""
+        response_default = requests.get(
+            f"{self.base_url}/resources/list-all-resources",
+            params={"gem5-version": "23.0"},
+        )
+        response_false = requests.get(
+            f"{self.base_url}/resources/list-all-resources",
+            params={"gem5-version": "23.0", "latest-version": "false"},
+        )
+
+        self.assertEqual(response_default.status_code, 200)
+        self.assertEqual(response_false.status_code, 200)
+
+        data_default = response_default.json()
+        data_false = response_false.json()
+
+        # Both should return the same results
+        self.assertEqual(len(data_default), len(data_false))
+
+    def test_list_all_resources_latest_version_reduces_results(self):
+        """Test that latest-version=true returns fewer or equal resources
+        than default."""
+        response_all = requests.get(
+            f"{self.base_url}/resources/list-all-resources",
+            params={"gem5-version": "23.0"},
+        )
+        response_latest = requests.get(
+            f"{self.base_url}/resources/list-all-resources",
+            params={"gem5-version": "23.0", "latest-version": "true"},
+        )
+
+        self.assertEqual(response_all.status_code, 200)
+        self.assertEqual(response_latest.status_code, 200)
+
+        data_all = response_all.json()
+        data_latest = response_latest.json()
+
+        # Latest should have <= resources than all versions
+        self.assertLessEqual(len(data_latest), len(data_all))
+
+        # All IDs in latest should exist in all versions
+        latest_ids = {r["id"] for r in data_latest}
+        all_ids = {r["id"] for r in data_all}
+        self.assertTrue(latest_ids.issubset(all_ids))
+
+    def test_list_all_resources_latest_version_returns_highest(self):
+        """Test that latest-version=true returns the highest version of each
+        resource."""
+        response_all = requests.get(
+            f"{self.base_url}/resources/list-all-resources",
+            params={"gem5-version": "23.0"},
+        )
+        response_latest = requests.get(
+            f"{self.base_url}/resources/list-all-resources",
+            params={"gem5-version": "23.0", "latest-version": "true"},
+        )
+
+        self.assertEqual(response_all.status_code, 200)
+        self.assertEqual(response_latest.status_code, 200)
+
+        data_all = response_all.json()
+        data_latest = response_latest.json()
+
+        # Build a dict of max versions from all resources
+        max_versions = {}
+        for r in data_all:
+            rid = r["id"]
+            ver = r.get("resource_version", "0")
+            if rid not in max_versions:
+                max_versions[rid] = ver
+            else:
+                # Compare versions
+                current = tuple(int(x) for x in ver.split("."))
+                existing = tuple(int(x) for x in max_versions[rid].split("."))
+                if current > existing:
+                    max_versions[rid] = ver
+
+        # Verify latest returns the max version for each resource
+        for r in data_latest:
+            rid = r["id"]
+            self.assertEqual(r["resource_version"], max_versions[rid])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -9,6 +9,7 @@ import azure.functions as func
 from shared.database import RESOURCE_FIELDS
 from shared.utils import (
     create_error_response,
+    get_latest_versions,
     sanitize_version,
 )
 
@@ -31,12 +32,18 @@ def register_function(app, collection):
         Query Parameters:
         - gem5-version: Required, the gem5 version to match against
                         (e.g., "25.0.0.1" will match resources with "25.0")
+        - latest-version: Optional, if set to "true", returns only the latest
+                          compatible version of each resource instead of all
+                          compatible versions. Default is false (return all).
         """
         logging.info(
             "Processing request to list all resources by gem5 version"
         )
         try:
             gem5_version = req.params.get("gem5-version")
+            latest_version_only = (
+                req.params.get("latest-version", "false").lower() == "true"
+            )
 
             if not gem5_version:
                 return create_error_response(
@@ -72,6 +79,11 @@ def register_function(app, collection):
             query = {"gem5_versions": {"$in": prefixes}}
 
             resources = list(collection.find(query, RESOURCE_FIELDS))
+
+            # If latest-version is set, return only the latest version of
+            # each resource
+            if latest_version_only:
+                resources = get_latest_versions(resources)
 
             return func.HttpResponse(
                 body=json.dumps(resources),

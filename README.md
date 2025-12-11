@@ -171,6 +171,7 @@ Retrieve all resources that are compatible with a specific gem5 version. The end
 **Parameters**:
 
 - `gem5-version` (required): The gem5 version to match against (e.g., "23.0", "25.0.0.1")
+- `latest-version` (optional): If set to `"true"`, returns only the latest compatible version of each resource instead of all compatible versions. Default is `"false"` (returns all versions).
 
 **Examples**:
 
@@ -181,6 +182,9 @@ GET /api/resources/list-all-resources?gem5-version=23.0
 # Get all resources compatible with gem5 version 25.0.0.1
 # This will match resources with gem5_versions containing "25", "25.0", "25.0.0", or "25.0.0.1"
 GET /api/resources/list-all-resources?gem5-version=25.0.0.1
+
+# Get only the latest version of each resource compatible with gem5 version 23.0
+GET /api/resources/list-all-resources?gem5-version=23.0&latest-version=true
 ```
 
 **Response Format**:
